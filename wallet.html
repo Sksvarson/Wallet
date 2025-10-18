@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mój Portfel - Śledzenie Wydatków</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+            padding-top: 60px; /* Safe area for iPhone */
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: normal;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .add-expense-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .add-expense-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .add-income-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .add-income-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .expense-form {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .form-container {
+            background: #2d2d2d;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: normal;
+            color: #e0e0e0;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        /* Usunięcie strzałek z select */
+        .form-group select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: none;
+        }
+
+        /* Stylowanie strzałek w polu number */
+        .form-group input[type="number"]::-webkit-outer-spin-button,
+        .form-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .form-group input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .form-group input[type="number"]::-webkit-outer-spin-button,
+        .form-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: inner-spin-button;
+            opacity: 1;
+            background: #1a1a1a;
+            color: #000000;
+            height: 20px;
+            width: 20px;
+            margin-right: 5px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4a4a4a;
+            background: #2d2d2d;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Ciemne style dla select */
+        .form-group select option {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 10px;
+        }
+
+        .form-group select:focus option {
+            background: #2d2d2d;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: normal;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .expenses-list {
+            padding: 20px;
+        }
+
+        .month-group {
+            margin-bottom: 25px;
+        }
+
+        .month-header {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #e0e0e0;
+            text-align: center;
+            font-weight: normal;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .month-dashes {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            margin: 0 15px;
+            position: relative;
+            border: 1px solid rgba(39, 39, 39, 0.2);
+            box-shadow: 0 0 5px 1px rgba(0, 0, 0, 0.1);
+            border-radius: 40px;
+        }
+
+        .month-balance {
+            color: #ff6b6b;
+            white-space: nowrap;
+            margin-right: 15px;
+        }
+
+        .month-balance.positive {
+            color: #4caf50;
+        }
+
+        .month-balance.zero {
+            color: #000000;
+        }
+
+        .month-header:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .month-arrow {
+            font-size: 16px;
+            transition: transform 0.3s ease;
+            text-shadow: 0 0 2px rgba(0, 0, 0, 0.699);
+            color: #303030;
+        }
+
+        .month-arrow.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .month-expenses {
+            overflow: hidden;
+            transition: max-height 0.35s ease, opacity 0.25s ease;
+            opacity: 1;
+        }
+
+        .month-expenses.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        .expense-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4a4a4a;
+            transition: all 0.3s ease;
+            position: relative;
+            touch-action: pan-y;
+        }
+
+        .expense-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .expense-item.swiping {
+            transition: none;
+        }
+
+
+        .expense-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .expense-amount {
+            font-size: 18px;
+            font-weight: normal;
+            color: #ff6b6b;
+        }
+
+        .income-amount {
+            color: #4caf50;
+        }
+
+        .expense-date {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .expense-store {
+            font-size: 14px;
+            color: #e0e0e0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #e0e0e0;
+            font-weight: normal;
+        }
+
+        .total-expenses {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .total-amount {
+            font-size: 24px;
+            font-weight: normal;
+            color: #ff6b6b;
+            margin-bottom: 5px;
+        }
+
+        .total-amount.positive {
+            color: #4caf50;
+        }
+
+        .total-amount.zero {
+            color: #000000;
+        }
+
+        .total-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @media (max-width: 428px) {
+            body {
+                padding: 10px;
+                padding-top: 50px;
+            }
+            
+            .container {
+                border-radius: 15px;
+            }
+            
+            .form-container {
+                padding: 20px;
+                border-radius: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Mój Portfel</h1>
+            <p>Śledź swoje wydatki i dochody</p>
+        </div>
+
+        <div class="expenses-list">
+            <div class="total-expenses">
+                <div class="total-amount" id="totalAmount">0,00 zł</div>
+                <div class="total-label">Bilans (dochody - wydatki)</div>
+            </div>
+            
+            <div id="expensesList">
+                <div class="empty-state">
+                    <h3>Brak wydatków</h3>
+                    <p>Dodaj swój pierwszy wydatek!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="add-expense-btn" onclick="openForm()">+</button>
+    <button class="add-income-btn" onclick="openIncomeForm()">+</button>
+
+    <div class="expense-form" id="expenseForm">
+        <div class="form-container">
+            <button class="close-btn" onclick="closeForm()">×</button>
+            <h2 style="margin-bottom: 20px; text-align: center;">Dodaj wydatek</h2>
+            
+            <form id="expenseFormData">
+                <div class="form-group">
+                    <label for="amount">Kwota (zł)</label>
+                    <input type="number" id="amount" name="amount" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="store">Sklep</label>
+                    <select id="store" name="store" required onchange="toggleCustomStore()">
+                        <option value="">Wybierz sklep</option>
+                        <option value="Biedronka">Biedronka</option>
+                        <option value="Żabka">Żabka</option>
+                        <option value="Lidl">Lidl</option>
+                        <option value="Media Expert">Media Expert</option>
+                        <option value="Carrefour">Carrefour</option>
+                        <option value="Tesco">Tesco</option>
+                        <option value="Kaufland">Kaufland</option>
+                        <option value="Auchan">Auchan</option>
+                        <option value="Rossmann">Rossmann</option>
+                        <option value="Inny">Inny</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="customStoreGroup" style="display: none;">
+                    <label for="customStore">Nazwa sklepu</label>
+                    <input type="text" id="customStore" name="customStore" placeholder="Wpisz nazwę sklepu">
+                </div>
+                
+                <button type="submit" class="submit-btn">Zapisz wydatek</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="expense-form" id="incomeForm">
+        <div class="form-container">
+            <button class="close-btn" onclick="closeIncomeForm()">×</button>
+            <h2 style="margin-bottom: 20px; text-align: center;">Dodaj dochód</h2>
+            
+            <form id="incomeFormData">
+                <div class="form-group">
+                    <label for="incomeAmount">Kwota (zł)</label>
+                    <input type="number" id="incomeAmount" name="incomeAmount" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="incomeSource">Źródło</label>
+                    <select id="incomeSource" name="incomeSource" required onchange="toggleCustomIncomeSource()">
+                        <option value="">Wybierz źródło</option>
+                        <option value="Praca">Praca</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Inwestycje">Inwestycje</option>
+                        <option value="Sprzedaż">Sprzedaż</option>
+                        <option value="Darowizna">Darowizna</option>
+                        <option value="Zwrot">Zwrot</option>
+                        <option value="Inne">Inne</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="customIncomeSourceGroup" style="display: none;">
+                    <label for="customIncomeSource">Nazwa źródła</label>
+                    <input type="text" id="customIncomeSource" name="customIncomeSource" placeholder="Wpisz nazwę źródła">
+                </div>
+                
+                <button type="submit" class="submit-btn">Zapisz dochód</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        let incomes = JSON.parse(localStorage.getItem('incomes')) || [];
+        let collapsedMonths = JSON.parse(localStorage.getItem('collapsedMonths')) || [];
+
+        function openForm() {
+            document.getElementById('expenseForm').style.display = 'flex';
+        }
+
+        function closeForm() {
+            document.getElementById('expenseForm').style.display = 'none';
+            document.getElementById('expenseFormData').reset();
+            document.getElementById('customStoreGroup').style.display = 'none';
+        }
+
+        function openIncomeForm() {
+            document.getElementById('incomeForm').style.display = 'flex';
+        }
+
+        function closeIncomeForm() {
+            document.getElementById('incomeForm').style.display = 'none';
+            document.getElementById('incomeFormData').reset();
+            document.getElementById('customIncomeSourceGroup').style.display = 'none';
+        }
+
+        function toggleCustomStore() {
+            const storeSelect = document.getElementById('store');
+            const customStoreGroup = document.getElementById('customStoreGroup');
+            const customStoreInput = document.getElementById('customStore');
+            
+            if (storeSelect.value === 'Inny') {
+                customStoreGroup.style.display = 'block';
+                customStoreInput.required = true;
+            } else {
+                customStoreGroup.style.display = 'none';
+                customStoreInput.required = false;
+                customStoreInput.value = '';
+            }
+        }
+
+        function toggleCustomIncomeSource() {
+            const incomeSourceSelect = document.getElementById('incomeSource');
+            const customIncomeSourceGroup = document.getElementById('customIncomeSourceGroup');
+            const customIncomeSourceInput = document.getElementById('customIncomeSource');
+            
+            if (incomeSourceSelect.value === 'Inne') {
+                customIncomeSourceGroup.style.display = 'block';
+                customIncomeSourceInput.required = true;
+            } else {
+                customIncomeSourceGroup.style.display = 'none';
+                customIncomeSourceInput.required = false;
+                customIncomeSourceInput.value = '';
+            }
+        }
+
+        function saveExpense(amount, store) {
+            const customStore = document.getElementById('customStore').value;
+            const finalStore = store === 'Inny' && customStore ? customStore : store;
+            
+            const expense = {
+                id: Date.now(),
+                amount: parseFloat(amount),
+                store: finalStore,
+                date: new Date().toLocaleDateString('pl-PL', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                timestamp: new Date().getTime()
+            };
+            
+            expenses.unshift(expense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            renderExpenses();
+            closeForm();
+        }
+
+        function saveIncome(amount, source) {
+            const customSource = document.getElementById('customIncomeSource').value;
+            const finalSource = source === 'Inne' && customSource ? customSource : source;
+            
+            const income = {
+                id: Date.now(),
+                amount: parseFloat(amount),
+                source: finalSource,
+                date: new Date().toLocaleDateString('pl-PL', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                timestamp: new Date().getTime()
+            };
+            
+            incomes.unshift(income);
+            localStorage.setItem('incomes', JSON.stringify(incomes));
+            renderExpenses();
+            closeIncomeForm();
+        }
+
+        function renderExpenses() {
+            const expensesList = document.getElementById('expensesList');
+            const totalAmount = document.getElementById('totalAmount');
+            
+            if (expenses.length === 0 && incomes.length === 0) {
+                expensesList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Brak transakcji</h3>
+                        <p>Dodaj swój pierwszy wydatek lub dochód!</p>
+                    </div>
+                `;
+                totalAmount.textContent = '0,00 zł';
+                return;
+            }
+
+            const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const totalIncomes = incomes.reduce((sum, income) => sum + income.amount, 0);
+            const balance = totalIncomes - totalExpenses;
+            totalAmount.textContent = (balance < 0 ? '- ' + Math.abs(balance).toFixed(2) : balance.toFixed(2)) + ' zł';
+            
+            // Dodaj klasę positive/zero dla bilansu
+            totalAmount.classList.remove('positive', 'zero');
+            if (balance > 0) {
+                totalAmount.classList.add('positive');
+            } else if (balance === 0) {
+                totalAmount.classList.add('zero');
+            }
+
+            // Grupuj transakcje według miesięcy
+            const groupedTransactions = {};
+            
+            // Dodaj wydatki
+            expenses.forEach(expense => {
+                const expenseDate = new Date(expense.timestamp);
+                const monthKey = expenseDate.getFullYear() + '-' + (expenseDate.getMonth() + 1).toString().padStart(2, '0');
+                const monthName = expenseDate.toLocaleDateString('pl-PL', { 
+                    year: 'numeric', 
+                    month: 'long' 
+                });
+                
+                if (!groupedTransactions[monthKey]) {
+                    groupedTransactions[monthKey] = {
+                        monthName: monthName,
+                        expenses: [],
+                        incomes: []
+                    };
+                }
+                groupedTransactions[monthKey].expenses.push(expense);
+            });
+
+            // Dodaj dochody
+            incomes.forEach(income => {
+                const incomeDate = new Date(income.timestamp);
+                const monthKey = incomeDate.getFullYear() + '-' + (incomeDate.getMonth() + 1).toString().padStart(2, '0');
+                const monthName = incomeDate.toLocaleDateString('pl-PL', { 
+                    year: 'numeric', 
+                    month: 'long' 
+                });
+                
+                if (!groupedTransactions[monthKey]) {
+                    groupedTransactions[monthKey] = {
+                        monthName: monthName,
+                        expenses: [],
+                        incomes: []
+                    };
+                }
+                groupedTransactions[monthKey].incomes.push(income);
+            });
+
+            // Sortuj miesiące od najnowszego do najstarszego
+            const sortedMonths = Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a));
+
+            expensesList.innerHTML = sortedMonths.map(monthKey => {
+                const monthData = groupedTransactions[monthKey];
+                const monthExpensesTotal = monthData.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+                const monthIncomesTotal = monthData.incomes.reduce((sum, income) => sum + income.amount, 0);
+                const monthBalance = monthIncomesTotal - monthExpensesTotal;
+                
+                return `
+                    <div class="month-group">
+                        <div class="month-header" onclick="toggleMonth('${monthKey}')">
+                            <span>${monthData.monthName}</span>
+                            <div class="month-dashes"></div>
+                            <span class="month-balance ${monthBalance > 0 ? 'positive' : monthBalance === 0 ? 'zero' : ''}">${monthBalance < 0 ? '- ' + Math.abs(monthBalance).toFixed(2) : monthBalance.toFixed(2)} zł</span>
+                            <span class="month-arrow">▼</span>
+                        </div>
+                        <div class="month-expenses" id="expenses-${monthKey}">
+                            ${[...monthData.expenses, ...monthData.incomes]
+                                .sort((a, b) => b.timestamp - a.timestamp)
+                                .map(item => {
+                                    if (item.source) {
+                                        // To jest dochód
+                                        return `
+                                            <div class="expense-item income-item" data-id="${item.id}" data-type="income">
+                                                <div class="expense-header">
+                                                    <div class="expense-amount income-amount">+${item.amount.toFixed(2)} zł</div>
+                                                    <div class="expense-date">${item.date}</div>
+                                                </div>
+                                                <div class="expense-store">${item.source}</div>
+                                            </div>
+                                        `;
+                                    } else {
+                                        // To jest wydatek
+                                        return `
+                                            <div class="expense-item" data-id="${item.id}" data-type="expense">
+                                                <div class="expense-header">
+                                                    <div class="expense-amount">${item.amount.toFixed(2)} zł</div>
+                                                    <div class="expense-date">${item.date}</div>
+                                                </div>
+                                                <div class="expense-store">${item.store}</div>
+                                            </div>
+                                        `;
+                                    }
+                                }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Ustawienie początkowego max-height dla płynnej animacji
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.month-expenses').forEach(container => {
+                    const monthKey = container.id.replace('expenses-', '');
+                    if (collapsedMonths.includes(monthKey)) {
+                        // Miesiąc ma być zwinięty
+                        container.classList.add('collapsed');
+                        container.style.maxHeight = '0px';
+                        const arrow = document.querySelector(`[onclick="toggleMonth('${monthKey}')"] .month-arrow`);
+                        if (arrow) arrow.classList.add('collapsed');
+                    } else {
+                        // Miesiąc ma być rozwinięty
+                        container.style.maxHeight = container.scrollHeight + 'px';
+                    }
+                });
+                bindSwipeHandlers();
+            });
+        }
+
+        function deleteExpense(id) {
+            expenses = expenses.filter(expense => expense.id !== id);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            renderExpenses();
+        }
+
+        function deleteIncome(id) {
+            incomes = incomes.filter(income => income.id !== id);
+            localStorage.setItem('incomes', JSON.stringify(incomes));
+            renderExpenses();
+        }
+
+        function toggleMonth(monthKey) {
+            const expensesContainer = document.getElementById(`expenses-${monthKey}`);
+            const arrow = document.querySelector(`[onclick="toggleMonth('${monthKey}')"] .month-arrow`);
+
+            if (!expensesContainer) return;
+
+            const isCollapsed = expensesContainer.classList.contains('collapsed');
+            if (isCollapsed) {
+                // Rozwijanie
+                expensesContainer.classList.remove('collapsed');
+                arrow && arrow.classList.remove('collapsed');
+                // Usuń z listy zwiniętych
+                collapsedMonths = collapsedMonths.filter(key => key !== monthKey);
+                localStorage.setItem('collapsedMonths', JSON.stringify(collapsedMonths));
+                // przed ustawieniem na 'auto' trzeba wymusić layout i ustawić docelowe px
+                expensesContainer.style.maxHeight = expensesContainer.scrollHeight + 'px';
+                // po zakończonej animacji wyczyść inline style
+                expensesContainer.addEventListener('transitionend', function handler(e) {
+                    if (e.propertyName === 'max-height') {
+                        expensesContainer.style.maxHeight = expensesContainer.scrollHeight + 'px';
+                        expensesContainer.removeEventListener('transitionend', handler);
+                    }
+                });
+            } else {
+                // Zwijanie: ustaw aktualną wysokość, następnie 0 aby była animacja
+                expensesContainer.style.maxHeight = expensesContainer.scrollHeight + 'px';
+                // wymuś reflow, aby przeglądarka zauważyła zmianę
+                void expensesContainer.offsetHeight;
+                expensesContainer.classList.add('collapsed');
+                arrow && arrow.classList.add('collapsed');
+                expensesContainer.style.maxHeight = '0px';
+                // Dodaj do listy zwiniętych
+                if (!collapsedMonths.includes(monthKey)) {
+                    collapsedMonths.push(monthKey);
+                    localStorage.setItem('collapsedMonths', JSON.stringify(collapsedMonths));
+                }
+            }
+        }
+
+        // Event listeners
+        document.getElementById('expenseFormData').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const amount = document.getElementById('amount').value;
+            const store = document.getElementById('store').value;
+            
+            if (amount && store) {
+                saveExpense(amount, store);
+            }
+        });
+
+        document.getElementById('incomeFormData').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const amount = document.getElementById('incomeAmount').value;
+            const source = document.getElementById('incomeSource').value;
+            
+            if (amount && source) {
+                saveIncome(amount, source);
+            }
+        });
+
+        // Close form when clicking outside
+        document.getElementById('expenseForm').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeForm();
+            }
+        });
+
+        document.getElementById('incomeForm').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeIncomeForm();
+            }
+        });
+
+        // Initialize
+        renderExpenses();
+
+        // Swipe-to-delete
+        function bindSwipeHandlers() {
+            const threshold = 80; // px do usunięcia
+            const items = document.querySelectorAll('.expense-item');
+            items.forEach(item => {
+                let startX = 0;
+                let currentX = 0;
+                let isSwiping = false;
+
+                const onTouchStart = (e) => {
+                    const touch = e.touches[0];
+                    startX = touch.clientX;
+                    currentX = startX;
+                    isSwiping = true;
+                    item.classList.add('swiping');
+                };
+
+                const onTouchMove = (e) => {
+                    if (!isSwiping) return;
+                    const touch = e.touches[0];
+                    currentX = touch.clientX;
+                    const deltaX = currentX - startX;
+                    if (deltaX > 0) {
+                        item.style.transform = `translateX(${deltaX}px)`;
+                        item.classList.toggle('deleting', deltaX > threshold / 2);
+                    }
+                };
+
+                const cleanupInline = () => {
+                    item.style.transform = '';
+                    item.classList.remove('swiping');
+                    item.classList.remove('deleting');
+                };
+
+                const onTouchEnd = () => {
+                    if (!isSwiping) return;
+                    isSwiping = false;
+                    const deltaX = currentX - startX;
+                    if (deltaX > threshold) {
+                        // Usuń z UI z animacją przesunięcia i z pamięci
+                        const id = parseInt(item.getAttribute('data-id'));
+                        const type = item.getAttribute('data-type');
+                        item.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                        item.style.transform = `translateX(120%)`;
+                        item.style.opacity = '0';
+                        item.classList.add('deleting');
+                        setTimeout(() => {
+                            if (type === 'income') {
+                                deleteIncome(id);
+                            } else {
+                                deleteExpense(id);
+                            }
+                        }, 180);
+                    } else {
+                        // powrót
+                        item.style.transition = 'transform 0.2s ease, background-color 0.2s ease';
+                        item.style.transform = 'translateX(0)';
+                        setTimeout(cleanupInline, 220);
+                    }
+                };
+
+                item.addEventListener('touchstart', onTouchStart, { passive: true });
+                item.addEventListener('touchmove', onTouchMove, { passive: true });
+                item.addEventListener('touchend', onTouchEnd);
+                item.addEventListener('touchcancel', onTouchEnd);
+            });
+        }
+    </script>
+</body>
+</html>
