@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <!-- iPhone web app setup -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Wallet">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <!-- Manifest for Android/desktop PWA (opcjonalnie, ale warto) -->
+    <link rel="manifest" href="manifest.json">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wallet - Expense Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            min-height: 100dvh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(0deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            height: 100vh; /* pełna wysokość ekranu */
+            min-height: 100vh;
+            overflow: hidden; /* brak przewijania całej strony */
+            padding: 20px;
+            padding-top: calc(20px + env(safe-area-inset-top));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            overscroll-behavior: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        html {
+            min-height: 100%;
+        }
+
+        .container {
+            max-width: 390px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow: hidden; /* wewnętrzny scroll tylko na liście */
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+    background: linear-gradient(135deg, #2a5188 0%, #4f3a74 100%);
+            padding: 28px 24px 20px;
+            text-align: center;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 12px 40px rgba(76, 99, 210, 0.4), 0 0 30px rgba(107, 70, 193, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 6px;
+            letter-spacing: -1px;
+            color: #ffffff;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.5);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+        }
+
+        .header p {
+            font-size: 15px;
+            opacity: 0.9;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 2px 4px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+        }
+
+        .add-expense-btn {
+            position: absolute;
+            bottom: 50%;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            transform: translateY(50%);
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 0px 24px -4px rgba(255, 107, 107, 0.6), 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 20px rgba(255, 107, 107, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 107, 107, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001; /* wyżej niż nawigacja */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* .add-expense-btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255, 107, 107, 0.7), 0 6px 16px rgba(0, 0, 0, 0.2), 0 0 30px rgba(255, 107, 107, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            text-shadow: 0 0 15px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 107, 107, 0.8);
+        }
+
+        .add-expense-btn:active {
+            transform: scale(0.95);
+        } */
+
+        .add-income-btn {
+            position: absolute;
+            bottom: 50%; /* przesunięte wyżej, żeby były nad nawigacją */
+            left: 24px;
+            width: 56px;
+            height: 56px;
+            transform: translateY(50%);
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 0px 24px -4px rgba(81, 207, 102, 0.6), 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 20px rgba(81, 207, 102, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(81, 207, 102, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001; /* wyżej niż nawigacja */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* .add-income-btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 12px 32px rgba(81, 207, 102, 0.7), 0 6px 16px rgba(0, 0, 0, 0.2), 0 0 30px rgba(81, 207, 102, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            text-shadow: 0 0 15px rgba(255, 255, 255, 1), 0 0 30px rgba(81, 207, 102, 0.8);
+        }
+
+        .add-income-btn:active {
+            transform: scale(0.95);
+        } */
+
+        .expense-form {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                backdrop-filter: blur(0px);
+            }
+            to {
+                opacity: 1;
+                backdrop-filter: blur(20px);
+            }
+        }
+
+        .form-container {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+            border-radius: 24px;
+            padding: 32px;
+            width: 90%;
+            max-width: 390px;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 40px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 16px;
+            letter-spacing: 0.2px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Usunięcie strzałek z select */
+        .form-group select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: none;
+        }
+
+        /* Stylowanie strzałek w polu number */
+        .form-group input[type="number"]::-webkit-outer-spin-button,
+        .form-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .form-group input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .form-group input[type="number"]::-webkit-outer-spin-button,
+        .form-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: inner-spin-button;
+            opacity: 1;
+            background: #1a1a1a;
+            color: #000000;
+            height: 20px;
+            width: 20px;
+            margin-right: 5px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Ciemne style dla select */
+        .form-group select option {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 10px;
+        }
+
+        .form-group select:focus option {
+            background: #2d2d2d;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4), 0 0 20px rgba(102, 126, 234, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6), 0 0 30px rgba(102, 126, 234, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .expenses-list {
+            padding: 24px;
+            position: fixed; /* fixed positioning */
+            top: calc(118px); /* zaczyna się po header */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 390px;
+            height: calc(100vh - 100px - env(safe-area-inset-top)); /* wysokość minus header i nawigacja */
+            overflow-y: auto; /* przewijanie tylko w obrębie listy */
+            -webkit-overflow-scrolling: touch;
+            z-index: 1;
+        }
+
+        /* Liquid glass dla scrollbar */
+        .expenses-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .expenses-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .expenses-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            backdrop-filter: blur(20px) saturate(180%);
+            box-shadow: 
+                inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .expenses-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(25px) saturate(200%);
+        }
+
+        /* Firefox scrollbar */
+        .expenses-list {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+
+        /* Nawigacja na dole */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px; /* ustalona wysokość nawigacji */
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            box-shadow: 0 0 10px -3px rgba(0, 0, 0, 0.445);
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Dodatkowy bufor na dole, aby lista kończyła się nad przyciskami */
+        .expenses-list::after {
+            content: '';
+            display: block;
+            height: calc(140px + env(safe-area-inset-bottom));
+        }
+
+        .month-group {
+            margin-bottom: 25px;
+        }
+
+        .month-header {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            font-size: 16px;
+            color: #ffffff;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .month-dashes {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            margin: 0 15px;
+            position: relative;
+            border: 1px solid rgba(39, 39, 39, 0.2);
+            box-shadow: 0 0 5px 1px rgba(0, 0, 0, 0.1);
+            border-radius: 40px;
+        }
+
+        .month-balance {
+            color: #ff6b6b;
+            white-space: nowrap;
+            margin-right: 15px;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+
+        .month-balance.positive {
+            color: #51cf66;
+            text-shadow: 0 0 10px rgba(81, 207, 102, 0.5);
+        }
+
+        .month-balance.zero {
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .month-header:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.08) 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .month-arrow {
+            font-size: 16px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+        }
+
+        .month-arrow.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .month-expenses {
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+        }
+
+        .month-expenses.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        .expense-item {
+            background: transparent; /* < 430px bez tła */
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            border-left: 4px solid #4a4a4a;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease-out;
+            position: relative;
+            touch-action: pan-y;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 0 20px rgba(255, 255, 255, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .expense-item:hover {
+            transform: translateX(4px) translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), 0 0 30px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .expense-item.swiping {
+            transition: none;
+        }
+
+        .expense-item.deleting {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(255, 107, 107, 0.1) 100%);
+            border-left-color: #ff6b6b;
+        }
+
+        .expense-item.removing {
+            transform: translateX(120%) scale(0.8);
+            opacity: 0;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .expense-item.slide-up {
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Gradient tylko dla >=430px szerokości */
+        @media (min-width: 430px) {
+            .expense-item {
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+            }
+            .expense-item:hover {
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.06) 100%);
+            }
+        }
+
+
+        .expense-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .expense-amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ff6b6b;
+            letter-spacing: -0.3px;
+            text-shadow: 0 0 15px rgba(255, 107, 107, 0.5), 0 0 30px rgba(255, 107, 107, 0.2);
+        }
+
+        .income-amount {
+            color: #51cf66;
+            font-weight: 700;
+            text-shadow: 0 0 15px rgba(81, 207, 102, 0.5), 0 0 30px rgba(81, 207, 102, 0.2);
+        }
+
+        .expense-date {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.65);
+            font-weight: 500;
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+        }
+
+        .expense-store {
+            font-size: 16px;
+            color: #ffffff;
+            font-weight: 500;
+            margin-top: 4px;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 12px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .total-expenses {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .total-amount {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ff6b6b;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.6), 0 0 40px rgba(255, 107, 107, 0.3);
+        }
+
+        .total-amount.positive {
+            color: #51cf66;
+            text-shadow: 0 0 20px rgba(81, 207, 102, 0.6), 0 0 40px rgba(81, 207, 102, 0.3);
+        }
+
+        .total-amount.zero {
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3);
+        }
+
+        .total-label {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.75);
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 428px) {
+            body {
+                padding: 0;
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            
+            .container {
+                border-radius: 0;
+                max-width: 100%;
+            }
+            
+            .form-container {
+                padding: 24px;
+                border-radius: 20px;
+                width: 95%;
+            }
+            
+            .expenses-list {
+                padding: 20px;
+                padding-bottom: 120px;
+            }
+            
+            .header {
+                padding: 28px 20px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>My Wallet</h1>
+            <p>Track your expenses and income</p>
+        </div>
+
+        <div class="expenses-list">
+            <div class="total-expenses">
+                <div class="total-amount" id="totalAmount">$0.00</div>
+                <div class="total-label">Balance (income - expenses)</div>
+            </div>
+            
+            <div id="expensesList">
+                <div class="empty-state">
+                    <h3>No transactions</h3>
+                    <p>Add your first transaction!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Nawigacja na dole -->
+    <div class="bottom-nav">
+        <div style="color: rgba(255, 255, 255, 0.7); font-size: 14px; text-align: center;">
+            My Wallet - Expense Tracker
+        </div>
+        <button class="add-expense-btn" onclick="openForm()">-</button>
+        <button class="add-income-btn" onclick="openIncomeForm()">+</button>
+    </div>
+
+    <div class="expense-form" id="expenseForm">
+        <div class="form-container">
+            <button class="close-btn" onclick="closeForm()">×</button>
+            <h2 style="margin-bottom: 20px; text-align: center; text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);">Add Expense</h2>
+            
+            <form id="expenseFormData">
+                <div class="form-group">
+                    <label for="amount">Kwota (zł)</label>
+                    <input type="text" id="amount" name="amount" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="0,00" autocomplete="off" required oninput="this.value = this.value.replace(/[^0-9,]/g, '')" />
+
+                </div>
+                
+                <div class="form-group">
+                    <label for="store">Store</label>
+                    <select id="store" name="store" required onchange="toggleCustomStore()">
+                        <option value="">Select store</option>
+                        <option value="Walmart">Walmart</option>
+                        <option value="Target">Target</option>
+                        <option value="Amazon">Amazon</option>
+                        <option value="Costco">Costco</option>
+                        <option value="Best Buy">Best Buy</option>
+                        <option value="Starbucks">Starbucks</option>
+                        <option value="McDonald's">McDonald's</option>
+                        <option value="Gas Station">Gas Station</option>
+                        <option value="Grocery Store">Grocery Store</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="customStoreGroup" style="display: none;">
+                    <label for="customStore">Store name</label>
+                    <input type="text" id="customStore" name="customStore" placeholder="Enter store name">
+                </div>
+                
+                <button type="submit" class="submit-btn">Save Expense</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="expense-form" id="incomeForm">
+        <div class="form-container">
+            <button class="close-btn" onclick="closeIncomeForm()">×</button>
+            <h2 style="margin-bottom: 20px; text-align: center; text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);">Add Income</h2>
+            
+            <form id="incomeFormData">
+                <div class="form-group">
+                    <label for="incomeAmount">Kwota (zł)</label>
+                    <input type="text" id="incomeAmount" name="incomeAmount" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off" required oninput="this.value = this.value.replace(/[^0-9,]/g, '')">
+                </div>
+                
+                <div class="form-group">
+                    <label for="incomeSource">Source</label>
+                    <select id="incomeSource" name="incomeSource" required onchange="toggleCustomIncomeSource()">
+                        <option value="">Select source</option>
+                        <option value="Salary">Salary</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Investment">Investment</option>
+                        <option value="Sale">Sale</option>
+                        <option value="Gift">Gift</option>
+                        <option value="Refund">Refund</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="customIncomeSourceGroup" style="display: none;">
+                    <label for="customIncomeSource">Source name</label>
+                    <input type="text" id="customIncomeSource" name="customIncomeSource" placeholder="Enter source name">
+                </div>
+                
+                <button type="submit" class="submit-btn">Save Income</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        let incomes = JSON.parse(localStorage.getItem('incomes')) || [];
+        let collapsedMonths = JSON.parse(localStorage.getItem('collapsedMonths')) || [];
+
+        function openForm() {
+            document.getElementById('expenseForm').style.display = 'flex';
+        }
+
+        function closeForm() {
+            document.getElementById('expenseForm').style.display = 'none';
+            document.getElementById('expenseFormData').reset();
+            document.getElementById('customStoreGroup').style.display = 'none';
+        }
+
+        function openIncomeForm() {
+            document.getElementById('incomeForm').style.display = 'flex';
+        }
+
+        function closeIncomeForm() {
+            document.getElementById('incomeForm').style.display = 'none';
+            document.getElementById('incomeFormData').reset();
+            document.getElementById('customIncomeSourceGroup').style.display = 'none';
+        }
+
+        function toggleCustomStore() {
+            const storeSelect = document.getElementById('store');
+            const customStoreGroup = document.getElementById('customStoreGroup');
+            const customStoreInput = document.getElementById('customStore');
+            
+            if (storeSelect.value === 'Other') {
+                customStoreGroup.style.display = 'block';
+                customStoreInput.required = true;
+            } else {
+                customStoreGroup.style.display = 'none';
+                customStoreInput.required = false;
+                customStoreInput.value = '';
+            }
+        }
+
+        function toggleCustomIncomeSource() {
+            const incomeSourceSelect = document.getElementById('incomeSource');
+            const customIncomeSourceGroup = document.getElementById('customIncomeSourceGroup');
+            const customIncomeSourceInput = document.getElementById('customIncomeSource');
+            
+            if (incomeSourceSelect.value === 'Other') {
+                customIncomeSourceGroup.style.display = 'block';
+                customIncomeSourceInput.required = true;
+            } else {
+                customIncomeSourceGroup.style.display = 'none';
+                customIncomeSourceInput.required = false;
+                customIncomeSourceInput.value = '';
+            }
+        }
+
+        function saveExpense(amount, store) {
+            const customStore = document.getElementById('customStore').value;
+            const finalStore = store === 'Other' && customStore ? customStore : store;
+            
+            // Zamień przecinek na kropkę dla parseFloat
+            const numericAmount = parseFloat(amount.replace(',', '.'));
+            
+            const expense = {
+                id: Date.now(),
+                amount: numericAmount,
+                store: finalStore,
+                date: new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                timestamp: new Date().getTime()
+            };
+            
+            expenses.unshift(expense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            renderExpenses();
+            closeForm();
+        }
+
+        function saveIncome(amount, source) {
+            const customSource = document.getElementById('customIncomeSource').value;
+            const finalSource = source === 'Other' && customSource ? customSource : source;
+            
+            // Zamień przecinek na kropkę dla parseFloat
+            const numericAmount = parseFloat(amount.replace(',', '.'));
+            
+            const income = {
+                id: Date.now(),
+                amount: numericAmount,
+                source: finalSource,
+                date: new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                timestamp: new Date().getTime()
+            };
+            
+            incomes.unshift(income);
+            localStorage.setItem('incomes', JSON.stringify(incomes));
+            renderExpenses();
+            closeIncomeForm();
+        }
+
+        function renderExpenses() {
+            const expensesList = document.getElementById('expensesList');
+            const totalAmount = document.getElementById('totalAmount');
+            
+            if (expenses.length === 0 && incomes.length === 0) {
+                expensesList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No transactions</h3>
+                        <p>Add your first expense or income!</p>
+                    </div>
+                `;
+                totalAmount.textContent = '0,00 zł';
+                return;
+            }
+
+            const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const totalIncomes = incomes.reduce((sum, income) => sum + income.amount, 0);
+            const balance = totalIncomes - totalExpenses;
+                totalAmount.textContent = (balance < 0 ? '- ' + Math.abs(balance).toFixed(2) : balance.toFixed(2)) + ' zł';
+            
+            // Dodaj klasę positive/zero dla bilansu
+            totalAmount.classList.remove('positive', 'zero');
+            if (balance > 0) {
+                totalAmount.classList.add('positive');
+            } else if (balance === 0) {
+                totalAmount.classList.add('zero');
+            }
+
+            // Grupuj transakcje według miesięcy
+            const groupedTransactions = {};
+            
+            // Dodaj wydatki
+            expenses.forEach(expense => {
+                const expenseDate = new Date(expense.timestamp);
+                const monthKey = expenseDate.getFullYear() + '-' + (expenseDate.getMonth() + 1).toString().padStart(2, '0');
+                const monthName = expenseDate.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long' 
+                });
+                
+                if (!groupedTransactions[monthKey]) {
+                    groupedTransactions[monthKey] = {
+                        monthName: monthName,
+                        expenses: [],
+                        incomes: []
+                    };
+                }
+                groupedTransactions[monthKey].expenses.push(expense);
+            });
+
+            // Dodaj dochody
+            incomes.forEach(income => {
+                const incomeDate = new Date(income.timestamp);
+                const monthKey = incomeDate.getFullYear() + '-' + (incomeDate.getMonth() + 1).toString().padStart(2, '0');
+                const monthName = incomeDate.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long' 
+                });
+                
+                if (!groupedTransactions[monthKey]) {
+                    groupedTransactions[monthKey] = {
+                        monthName: monthName,
+                        expenses: [],
+                        incomes: []
+                    };
+                }
+                groupedTransactions[monthKey].incomes.push(income);
+            });
+
+            // Sortuj miesiące od najnowszego do najstarszego
+            const sortedMonths = Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a));
+
+            expensesList.innerHTML = sortedMonths.map(monthKey => {
+                const monthData = groupedTransactions[monthKey];
+                const monthExpensesTotal = monthData.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+                const monthIncomesTotal = monthData.incomes.reduce((sum, income) => sum + income.amount, 0);
+                const monthBalance = monthIncomesTotal - monthExpensesTotal;
+                
+                return `
+                    <div class="month-group">
+                        <div class="month-header" onclick="toggleMonth('${monthKey}')">
+                            <span>${monthData.monthName}</span>
+                            <div class="month-dashes"></div>
+                            <span class="month-balance ${monthBalance > 0 ? 'positive' : monthBalance === 0 ? 'zero' : ''}">${monthBalance < 0 ? '- ' + Math.abs(monthBalance).toFixed(2) : monthBalance.toFixed(2)} zł</span>
+                            <span class="month-arrow">▼</span>
+                        </div>
+                        <div class="month-expenses" id="expenses-${monthKey}">
+                            ${[...monthData.expenses, ...monthData.incomes]
+                                .sort((a, b) => b.timestamp - a.timestamp)
+                                .map(item => {
+                                    if (item.source) {
+                                        // To jest dochód
+                                        return `
+                                            <div class="expense-item income-item" data-id="${item.id}" data-type="income">
+                                                <div class="expense-header">
+                                                    <div class="expense-amount income-amount">+${item.amount.toFixed(2)} zł</div>
+                                                    <div class="expense-date">${item.date}</div>
+                                                </div>
+                                                <div class="expense-store">${item.source}</div>
+                                            </div>
+                                        `;
+                                    } else {
+                                        // To jest wydatek
+                                        return `
+                                            <div class="expense-item" data-id="${item.id}" data-type="expense">
+                                                <div class="expense-header">
+                                                    <div class="expense-amount">${item.amount.toFixed(2)} zł</div>
+                                                    <div class="expense-date">${item.date}</div>
+                                                </div>
+                                                <div class="expense-store">${item.store}</div>
+                                            </div>
+                                        `;
+                                    }
+                                }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Ustawienie początkowego max-height dla płynnej animacji
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.month-expenses').forEach(container => {
+                    const monthKey = container.id.replace('expenses-', '');
+                    if (collapsedMonths.includes(monthKey)) {
+                        // Miesiąc ma być zwinięty
+                        container.classList.add('collapsed');
+                        container.style.maxHeight = '0px';
+                        const arrow = document.querySelector(`[onclick="toggleMonth('${monthKey}')"] .month-arrow`);
+                        if (arrow) arrow.classList.add('collapsed');
+                    } else {
+                        // Miesiąc ma być rozwinięty
+                        container.style.maxHeight = container.scrollHeight + 'px';
+                    }
+                });
+                bindSwipeHandlers();
+            });
+        }
+
+        function deleteExpense(id) {
+            const item = document.querySelector(`[data-id="${id}"][data-type="expense"]`);
+            if (item) {
+                // Animacja usuwania
+                item.classList.add('removing');
+                
+                // Przesuń elementy poniżej w górę
+                const nextSiblings = Array.from(item.parentNode.children).slice(
+                    Array.from(item.parentNode.children).indexOf(item) + 1
+                );
+                
+                nextSiblings.forEach(sibling => {
+                    if (sibling.classList.contains('expense-item')) {
+                        sibling.classList.add('slide-up');
+                    }
+                });
+                
+                // Po zakończeniu animacji usuń z DOM i zaktualizuj dane
+                setTimeout(() => {
+                    expenses = expenses.filter(expense => expense.id !== id);
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    renderExpenses();
+                }, 400);
+            } else {
+                // Fallback - usuń bez animacji
+                expenses = expenses.filter(expense => expense.id !== id);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+                renderExpenses();
+            }
+        }
+
+        function deleteIncome(id) {
+            const item = document.querySelector(`[data-id="${id}"][data-type="income"]`);
+            if (item) {
+                // Animacja usuwania
+                item.classList.add('removing');
+                
+                // Przesuń elementy poniżej w górę
+                const nextSiblings = Array.from(item.parentNode.children).slice(
+                    Array.from(item.parentNode.children).indexOf(item) + 1
+                );
+                
+                nextSiblings.forEach(sibling => {
+                    if (sibling.classList.contains('expense-item')) {
+                        sibling.classList.add('slide-up');
+                    }
+                });
+                
+                // Po zakończeniu animacji usuń z DOM i zaktualizuj dane
+                setTimeout(() => {
+                    incomes = incomes.filter(income => income.id !== id);
+                    localStorage.setItem('incomes', JSON.stringify(incomes));
+                    renderExpenses();
+                }, 400);
+            } else {
+                // Fallback - usuń bez animacji
+                incomes = incomes.filter(income => income.id !== id);
+                localStorage.setItem('incomes', JSON.stringify(incomes));
+                renderExpenses();
+            }
+        }
+
+        function toggleMonth(monthKey) {
+            const expensesContainer = document.getElementById(`expenses-${monthKey}`);
+            const arrow = document.querySelector(`[onclick="toggleMonth('${monthKey}')"] .month-arrow`);
+
+            if (!expensesContainer) return;
+
+            const isCollapsed = expensesContainer.classList.contains('collapsed');
+            if (isCollapsed) {
+                // Rozwijanie
+                expensesContainer.classList.remove('collapsed');
+                arrow && arrow.classList.remove('collapsed');
+                // Usuń z listy zwiniętych
+                collapsedMonths = collapsedMonths.filter(key => key !== monthKey);
+                localStorage.setItem('collapsedMonths', JSON.stringify(collapsedMonths));
+                // przed ustawieniem na 'auto' trzeba wymusić layout i ustawić docelowe px
+                expensesContainer.style.maxHeight = expensesContainer.scrollHeight + 'px';
+                // po zakończonej animacji wyczyść inline style
+                expensesContainer.addEventListener('transitionend', function handler(e) {
+                    if (e.propertyName === 'max-height') {
+                        expensesContainer.style.maxHeight = expensesContainer.scrollHeight + 'px';
+                        expensesContainer.removeEventListener('transitionend', handler);
+                    }
+                });
+            } else {
+                // Zwijanie: ustaw aktualną wysokość, następnie 0 aby była animacja
+                expensesContainer.style.maxHeight = expensesContainer.scrollHeight + 'px';
+                // wymuś reflow, aby przeglądarka zauważyła zmianę
+                void expensesContainer.offsetHeight;
+                expensesContainer.classList.add('collapsed');
+                arrow && arrow.classList.add('collapsed');
+                expensesContainer.style.maxHeight = '0px';
+                // Dodaj do listy zwiniętych
+                if (!collapsedMonths.includes(monthKey)) {
+                    collapsedMonths.push(monthKey);
+                    localStorage.setItem('collapsedMonths', JSON.stringify(collapsedMonths));
+                }
+            }
+        }
+
+        // Event listeners
+        document.getElementById('expenseFormData').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const amount = document.getElementById('amount').value;
+            const store = document.getElementById('store').value;
+            
+            if (amount && store) {
+                saveExpense(amount, store);
+            }
+        });
+
+        document.getElementById('incomeFormData').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const amount = document.getElementById('incomeAmount').value;
+            const source = document.getElementById('incomeSource').value;
+            
+            if (amount && source) {
+                saveIncome(amount, source);
+            }
+        });
+
+        // Close form when clicking outside
+        document.getElementById('expenseForm').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeForm();
+            }
+        });
+
+        document.getElementById('incomeForm').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeIncomeForm();
+            }
+        });
+
+        // Initialize
+        renderExpenses();
+
+        // Swipe-to-delete
+        function bindSwipeHandlers() {
+            const threshold = 80; // px do usunięcia
+            const items = document.querySelectorAll('.expense-item');
+            items.forEach(item => {
+                let startX = 0;
+                let currentX = 0;
+                let isSwiping = false;
+
+                const onTouchStart = (e) => {
+                    const touch = e.touches[0];
+                    startX = touch.clientX;
+                    currentX = startX;
+                    isSwiping = true;
+                    item.classList.add('swiping');
+                };
+
+                const onTouchMove = (e) => {
+                    if (!isSwiping) return;
+                    const touch = e.touches[0];
+                    currentX = touch.clientX;
+                    const deltaX = currentX - startX;
+                    if (deltaX > 0) {
+                        item.style.transform = `translateX(${deltaX}px)`;
+                        item.classList.toggle('deleting', deltaX > threshold / 2);
+                    }
+                };
+
+                const cleanupInline = () => {
+                    item.style.transform = '';
+                    item.classList.remove('swiping');
+                    item.classList.remove('deleting');
+                };
+
+                const onTouchEnd = () => {
+                    if (!isSwiping) return;
+                    isSwiping = false;
+                    const deltaX = currentX - startX;
+                    if (deltaX > threshold) {
+                        // Usuń z UI z animacją przesunięcia i z pamięci
+                        const id = parseInt(item.getAttribute('data-id'));
+                        const type = item.getAttribute('data-type');
+                        
+                        // Dodaj klasę usuwania
+                        item.classList.add('removing');
+                        
+                        // Przesuń elementy poniżej w górę
+                        const nextSiblings = Array.from(item.parentNode.children).slice(
+                            Array.from(item.parentNode.children).indexOf(item) + 1
+                        );
+                        
+                        nextSiblings.forEach(sibling => {
+                            if (sibling.classList.contains('expense-item')) {
+                                sibling.classList.add('slide-up');
+                            }
+                        });
+                        
+                        // Po zakończeniu animacji usuń z DOM i zaktualizuj dane
+                        setTimeout(() => {
+                            if (type === 'income') {
+                                deleteIncome(id);
+                            } else {
+                                deleteExpense(id);
+                            }
+                        }, 400);
+                    } else {
+                        // powrót
+                        item.style.transition = 'transform 0.2s ease, background-color 0.2s ease';
+                        item.style.transform = 'translateX(0)';
+                        setTimeout(cleanupInline, 220);
+                    }
+                };
+
+                item.addEventListener('touchstart', onTouchStart, { passive: true });
+                item.addEventListener('touchmove', onTouchMove, { passive: true });
+                item.addEventListener('touchend', onTouchEnd);
+                item.addEventListener('touchcancel', onTouchEnd);
+            });
+        }
+    </script>
+</body>
+</html>
+
+
